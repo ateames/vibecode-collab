@@ -1,6 +1,6 @@
-# Lemmy + Blorp deployment workspace
+# Vibe Code Collab — deployment workspace
 
-A **documentation and deployment** repository for running your own [Lemmy](https://github.com/LemmyNet/lemmy) instance with the [Blorp](https://github.com/Blorp-Labs/blorp) frontend.
+A **documentation and deployment** repository for **Vibe Code Collab**, a federated community platform built on a [Lemmy](https://github.com/LemmyNet/lemmy) backend and a [Blorp](https://github.com/Blorp-Labs/blorp) frontend fork.
 
 This repo does **not** contain Lemmy or Blorp source code. Those live in **two separate Git repositories** that you clone next to this project. Use this repo to document your setup, track deploy config, and manage the workflow between **Cursor → GitHub → DigitalOcean → Cloudflare Pages**.
 
@@ -13,13 +13,13 @@ This repo does **not** contain Lemmy or Blorp source code. Those live in **two s
                              │ HTTPS
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  Cloudflare Pages          ←  Blorp repo (static SPA build)     │
+│  Cloudflare Pages          ←  Blorp fork (Vibe Code Collab UI)  │
 │  app.yourdomain.com        REACT_APP_DEFAULT_INSTANCE → Lemmy   │
 └────────────────────────────┬────────────────────────────────────┘
                              │ Lemmy API (HTTPS, CORS)
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  DigitalOcean              ←  Lemmy repo (Docker Compose)         │
+│  DigitalOcean              ←  Lemmy repo (Docker Compose)       │
 │  lemmy.yourdomain.com      lemmy + postgres + pictrs + nginx    │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -29,7 +29,7 @@ This repo does **not** contain Lemmy or Blorp source code. Those live in **two s
 | ------------------ | ---------------------------------------------------------------------- | ---------------- | ---------------------------------- |
 | **This workspace** | *your* `vibecode-collab` (or similar)                                  | GitHub           | Docs, scripts, deploy templates    |
 | **Lemmy**          | *your fork* of [LemmyNet/lemmy](https://github.com/LemmyNet/lemmy)     | DigitalOcean     | Backend API, federation, database  |
-| **Blorp**          | *your fork* of [Blorp-Labs/blorp](https://github.com/Blorp-Labs/blorp) | Cloudflare Pages | Web UI (replaces default lemmy-ui) |
+| **Blorp fork**     | *your fork* of [Blorp-Labs/blorp](https://github.com/Blorp-Labs/blorp) | Cloudflare Pages | Vibe Code Collab UI (replaces default lemmy-ui) |
 
 
 ## Quick start
@@ -71,13 +71,30 @@ export BLORP_REPO=https://github.com/YOUR_USER/blorp.git
 ./scripts/repo-status.sh
 ```
 
+### 4. Deploy Vibe Code Collab UI to Cloudflare Pages (local build)
+
+Cloudflare’s remote build often cannot build the Blorp frontend. From this repo root:
+
+```bash
+pnpm install
+cp deploy/cloudflare/.env.example deploy/cloudflare/.env
+cp deploy/cloudflare/blorp.production.env.example blorp/.env.production
+# Edit both env files, then:
+pnpm exec wrangler login
+pnpm build:web:prod
+pnpm deploy:cloudflare:prod
+```
+
+See [deploy/cloudflare/README.md](deploy/cloudflare/README.md).
+
 ## Repository layout
 
 ```
 vibecode-collab/          ← THIS REPO (deployment + docs)
 ├── README.md
+├── package.json          ← pnpm build:web:prod, deploy:cloudflare:prod
 ├── docs/
-├── deploy/               ← your DO / Cloudflare config (add over time)
+├── deploy/               ← DO / Cloudflare (Wrangler Pages upload)
 ├── scripts/
 ├── .env.example
 ├── lemmy/                ← separate git repo (gitignored here)
@@ -130,12 +147,16 @@ See [docs/repositories.md](docs/repositories.md) for sync with upstream and rele
 
 ## Environment variables (overview)
 
-**Blorp** (build time on Cloudflare Pages) — copy from [blorp/.env.example](blorp/.env.example) after cloning:
+**Vibe Code Collab UI** (Blorp fork, build time on Cloudflare Pages) — copy from [blorp/.env.example](blorp/.env.example) after cloning:
 
 
 | Variable                             | Purpose                                    |
 | ------------------------------------ | ------------------------------------------ |
-| `REACT_APP_NAME`                     | Display name in the UI                     |
+| `REACT_APP_NAME`                     | Display name in the UI (`Vibe Code Collab`) |
+| `REACT_APP_TAGLINE`                  | Subtitle in browser tab / SEO              |
+| `REACT_APP_PUBLIC_URL`               | Public app URL for legal pages             |
+| `REACT_APP_SUPPORT_EMAIL`            | Support contact email                      |
+| `REACT_APP_GITHUB_REPO`              | Optional GitHub repo for support links     |
 | `REACT_APP_DEFAULT_INSTANCE`         | Your Lemmy URL (must match production API) |
 | `REACT_APP_LOCK_TO_DEFAULT_INSTANCE` | `1` to restrict users to your instance     |
 | `REACT_APP_INSTANCE_SELECTION_MODE`  | e.g. `default_first`                       |

@@ -1,0 +1,17 @@
+{
+  "name": "vibecode-collab",
+  "private": true,
+  "description": "Vibe Code Collab deployment workspace (Lemmy + Blorp fork docs and deploy tooling)",
+  "scripts": {
+    "build:web:prod": "bash scripts/build-blorp-prod.sh",
+    "deploy:cloudflare:prod": "bash scripts/deploy-cloudflare-pages.sh",
+    "deploy:lemmy:prod": "bash scripts/remote-deploy-lemmy.sh"
+  },
+  "devDependencies": {
+    "wrangler": "^4.24.0"
+  },
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20"
+  }
+}

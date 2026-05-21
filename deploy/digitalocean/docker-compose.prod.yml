@@ -1,0 +1,22 @@
+# Production overrides for upstream lemmy/docker/docker-compose.yml
+# Usage on server: docker compose -f docker-compose.yml -f /opt/vibecode-collab/deploy/digitalocean/docker-compose.prod.yml up -d
+
+services:
+  proxy:
+    ports:
+      - "127.0.0.1:1236:1236"
+
+  lemmy:
+    image: dessalines/lemmy:0.19.18
+    environment:
+      - RUST_LOG=warn
+    # LEMMY_DISABLE_ACTIVITY_SENDING removed for production federation
+
+  lemmy-ui:
+    environment:
+      - LEMMY_UI_BACKEND=lemmy:8536
+      - LEMMY_UI_HTTPS=true
+      - LEMMY_UI_ERUDA=false
+
+  postgres:
+    ports: !reset []

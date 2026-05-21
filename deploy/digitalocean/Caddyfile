@@ -1,0 +1,6 @@
+# Automatic HTTPS via Caddy (works with many Cloudflare proxied setups).
+# For Full (strict), switch to Caddyfile.example with Cloudflare Origin certs.
+
+api.vibecodecollab.com {
+	reverse_proxy 127.0.0.1:1236
+}

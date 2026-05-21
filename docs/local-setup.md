@@ -49,7 +49,7 @@ cp .env.example .env
 Point Blorp at your Lemmy API in `.env`:
 
 ```env
-REACT_APP_NAME=Local Dev
+REACT_APP_NAME=Vibe Code Collab
 REACT_APP_DEFAULT_INSTANCE=http://localhost:1236
 REACT_APP_LOCK_TO_DEFAULT_INSTANCE=1
 REACT_APP_INSTANCE_SELECTION_MODE=default_first
@@ -59,9 +59,24 @@ Use `https://` and your real hostname when testing against staging/production.
 
 ```bash
 pnpm dev        # Vite dev server
-pnpm build      # Production build
+pnpm build      # Production build (includes Capacitor sync)
 pnpm test       # Unit tests
 ```
+
+## Production Blorp → Cloudflare Pages (from workspace root)
+
+When Cloudflare cannot build Blorp remotely, use the deployment repo scripts (see [deploy/cloudflare/README.md](../deploy/cloudflare/README.md)):
+
+```bash
+cd ..   # vibecode-collab root, if you were in blorp/
+pnpm install
+cp deploy/cloudflare/blorp.production.env.example blorp/.env.production
+# edit blorp/.env.production and deploy/cloudflare/.env
+pnpm build:web:prod
+pnpm deploy:cloudflare:prod
+```
+
+`build:web:prod` runs **Vite only** (faster, smaller artifact than Blorp’s full `pnpm build`).
 
 ## CORS and local API
 

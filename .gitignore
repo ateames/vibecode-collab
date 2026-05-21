@@ -26,6 +26,12 @@ blorp/dist/
 blorp/node_modules/
 blorp/.pnpm-store/
 
+# Deployment repo tooling
+node_modules/
+deploy/cloudflare/.env
+deploy/digitalocean/.env
+deploy/digitalocean/secrets.env
+
 # OS and editors
 .DS_Store
 Thumbs.db
@@ -38,3 +44,4 @@ Thumbs.db
 *.log
 tmp/
 .cache/
+.pnpm-store/*

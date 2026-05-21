@@ -2,10 +2,12 @@
 
 Add environment-specific deployment files here (kept in **this** repo):
 
-| Path | Purpose |
-|------|---------|
-| `digitalocean/` | Docker Compose overrides, `lemmy.hjson` templates, DO App Platform spec |
-| `cloudflare/` | Cloudflare Pages build notes, `wrangler.toml` if needed |
+
+| Path            | Purpose                                                                 |
+| --------------- | ----------------------------------------------------------------------- |
+| [`digitalocean/`](digitalocean/) | Lemmy on Droplet `137.184.183.96` — run [`scripts/remote-deploy-lemmy.sh`](../scripts/remote-deploy-lemmy.sh) |
+| `cloudflare/`   | Wrangler Pages direct upload (`wrangler pages deploy`), env templates   |
+
 
 Upstream references:
 
