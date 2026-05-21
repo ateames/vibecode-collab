@@ -71,13 +71,30 @@ export BLORP_REPO=https://github.com/YOUR_USER/blorp.git
 ./scripts/repo-status.sh
 ```
 
+### 4. Deploy Blorp to Cloudflare Pages (local build)
+
+Cloudflare’s remote build often cannot build Blorp. From this repo root:
+
+```bash
+pnpm install
+cp deploy/cloudflare/.env.example deploy/cloudflare/.env
+cp deploy/cloudflare/blorp.production.env.example blorp/.env.production
+# Edit both env files, then:
+pnpm exec wrangler login
+pnpm build:web:prod
+pnpm deploy:cloudflare:prod
+```
+
+See [deploy/cloudflare/README.md](deploy/cloudflare/README.md).
+
 ## Repository layout
 
 ```
 vibecode-collab/          ← THIS REPO (deployment + docs)
 ├── README.md
+├── package.json          ← pnpm build:web:prod, deploy:cloudflare:prod
 ├── docs/
-├── deploy/               ← your DO / Cloudflare config (add over time)
+├── deploy/               ← DO / Cloudflare (Wrangler Pages upload)
 ├── scripts/
 ├── .env.example
 ├── lemmy/                ← separate git repo (gitignored here)

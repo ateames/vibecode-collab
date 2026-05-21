@@ -46,14 +46,15 @@ Quick check:
 
 ### “Ship a Blorp UI update”
 
-1. `cd blorp` → merge `upstream/main` (or your changes) → push your fork.
-2. Cloudflare Pages rebuilds automatically (if Git integration enabled).
-3. Verify env vars if upstream added new `REACT_APP_*` keys.
+1. `cd blorp` → merge `upstream/main` (or your changes).
+2. From **vibecode-collab** root: `pnpm build:web:prod` then `pnpm deploy:cloudflare:prod`.
+3. Or push to your fork and let Cloudflare Git build (if enabled and within size limits).
+4. Verify `blorp/.env.production` if upstream added new `REACT_APP_*` keys.
 
 ### “Change instance name or default URL”
 
-1. Update Cloudflare Pages environment variables.
-2. Trigger redeploy (or push empty commit to `blorp` if needed).
+1. Edit `blorp/.env.production` (build-time variables).
+2. `pnpm build:web:prod` and `pnpm deploy:cloudflare:prod` from the deployment repo root.
 3. Document change in `vibecode-collab` if it’s operational knowledge.
 
 ## AI / rules
