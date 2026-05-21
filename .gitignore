@@ -1,0 +1,40 @@
+# =============================================================================
+# Lemmy + Blorp deployment workspace
+# This repo tracks docs and deploy config only. Application code lives in
+# separate repos (see README.md).
+# =============================================================================
+
+# Local clones — each is its own git repository (do not commit here)
+/lemmy/
+/blorp/
+
+# Environment and secrets (never commit)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Lemmy runtime / Docker (when using lemmy/docker locally)
+lemmy/docker/volumes/
+lemmy/docker/*.local.hjson
+**/config/local/
+
+# Blorp build output (when developing in blorp/)
+blorp/dist/
+blorp/node_modules/
+blorp/.pnpm-store/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs and temp
+*.log
+tmp/
+.cache/
