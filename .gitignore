@@ -29,6 +29,8 @@ blorp/.pnpm-store/
 # Deployment repo tooling
 node_modules/
 deploy/cloudflare/.env
+deploy/digitalocean/.env
+deploy/digitalocean/secrets.env
 
 # OS and editors
 .DS_Store

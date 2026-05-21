@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "your-blorp-pages-project",
+  "name": "vibecodecollab-prod",
   "compatibility_date": "2025-05-21",
   "pages_build_output_dir": "../../blorp/dist"
 }

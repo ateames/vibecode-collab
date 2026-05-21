@@ -1,0 +1,29 @@
+# Copy to lemmy/docker/lemmy.hjson on the server (setup-lemmy.sh renders from secrets).
+# https://join-lemmy.org/docs/en/administration/configuration.html
+
+{
+  setup: {
+    admin_username: "ADMIN_USERNAME_PLACEHOLDER"
+    admin_password: "ADMIN_PASSWORD_PLACEHOLDER"
+    site_name: "SITE_NAME_PLACEHOLDER"
+  }
+
+  database: {
+    connection: "postgres://lemmy:POSTGRES_PASSWORD_PLACEHOLDER@postgres:5432/lemmy"
+  }
+
+  hostname: "api.vibecodecollab.com"
+  bind: "0.0.0.0"
+  port: 8536
+  tls_enabled: true
+
+  pictrs: {
+    url: "http://pictrs:8080/"
+    api_key: "PICTRS_API_KEY_PLACEHOLDER"
+  }
+
+  cors_origin: [
+    "https://vibecodecollab.com"
+    "https://www.vibecodecollab.com"
+  ]
+}

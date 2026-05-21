@@ -7,7 +7,14 @@ Production split:
 | Backend | **DigitalOcean** | Your `lemmy` fork | Docker Compose (or DO App Platform) |
 | Frontend | **Cloudflare Pages** | Your `blorp` fork | Static `dist/` from `pnpm build` |
 
-Replace `lemmy.example.com` and `app.example.com` with your domains.
+Production hostnames for this project:
+
+| Role | Hostname |
+|------|----------|
+| Lemmy API | `api.vibecodecollab.com` → Droplet `137.184.183.96` |
+| Blorp UI | `vibecodecollab.com` / `www` → Cloudflare Pages |
+
+Replace `lemmy.example.com` / `app.example.com` in generic examples with the rows above.
 
 ---
 

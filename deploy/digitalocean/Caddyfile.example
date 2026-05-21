@@ -1,0 +1,15 @@
+# /etc/caddy/Caddyfile on vibe-code-collab-prod (137.184.183.96)
+#
+# Option A — Cloudflare Origin Certificate (Full strict):
+#   Dashboard → SSL/TLS → Origin Server → create cert for api.vibecodecollab.com
+#   Save as /etc/caddy/certs/origin.pem and origin-key.pem, then use block below.
+
+api.vibecodecollab.com {
+	tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin-key.pem
+	reverse_proxy 127.0.0.1:1236
+}
+
+# Option B — Caddy automatic HTTPS (uncomment and comment Option A if origin cert not ready):
+# api.vibecodecollab.com {
+# 	reverse_proxy 127.0.0.1:1236
+# }
