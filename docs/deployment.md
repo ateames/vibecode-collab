@@ -115,7 +115,7 @@ With **Git build**, set in Pages → Settings → Environment variables:
 
 | Name | Example | Notes |
 |------|---------|--------|
-| `REACT_APP_NAME` | `My Community` | Shown in UI |
+| `REACT_APP_NAME` | `Vibe Code Collab` | Shown in UI |
 | `REACT_APP_DEFAULT_INSTANCE` | `https://lemmy.example.com` | **Must** be your live Lemmy URL |
 | `REACT_APP_LOCK_TO_DEFAULT_INSTANCE` | `1` | Locks instance picker |
 | `REACT_APP_INSTANCE_SELECTION_MODE` | `default_first` | See Blorp README |

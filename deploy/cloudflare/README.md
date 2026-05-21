@@ -1,6 +1,6 @@
 # Cloudflare Pages — local build, Wrangler direct upload
 
-Blorp is too large for Cloudflare’s **remote** Pages build environment. Build the static site on your machine, then upload `blorp/dist/` with **Wrangler Pages** (`wrangler pages deploy`), not `wrangler deploy` (Workers).
+The Vibe Code Collab UI (Blorp fork) is too large for Cloudflare’s **remote** Pages build environment. Build the static site on your machine, then upload `blorp/dist/` with **Wrangler Pages** (`wrangler pages deploy`), not `wrangler deploy` (Workers).
 
 ## Prerequisites
 
@@ -34,7 +34,7 @@ Blorp is too large for Cloudflare’s **remote** Pages build environment. Build 
    - `CLOUDFLARE_PAGES_PROJECT_NAME` — must match the Pages project name in Cloudflare.
    - `CLOUDFLARE_PAGES_BRANCH` — usually `main` or `production` (see your project’s production branch).
 
-   Edit `blorp/.env.production` with your live Lemmy URL and UI copy. See [pages-env-checklist.md](./pages-env-checklist.md).
+   Edit `blorp/.env.production` with your live Lemmy URL, `REACT_APP_NAME=Vibe Code Collab`, and branding vars. See [pages-env-checklist.md](./pages-env-checklist.md).
 
 4. **Align `wrangler.jsonc`** (optional but recommended): set `"name"` to the same value as `CLOUDFLARE_PAGES_PROJECT_NAME`.
 

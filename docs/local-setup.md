@@ -49,7 +49,7 @@ cp .env.example .env
 Point Blorp at your Lemmy API in `.env`:
 
 ```env
-REACT_APP_NAME=Local Dev
+REACT_APP_NAME=Vibe Code Collab
 REACT_APP_DEFAULT_INSTANCE=http://localhost:1236
 REACT_APP_LOCK_TO_DEFAULT_INSTANCE=1
 REACT_APP_INSTANCE_SELECTION_MODE=default_first
