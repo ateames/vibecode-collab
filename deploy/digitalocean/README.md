@@ -18,6 +18,13 @@
 ```
 
 4. Paste the printed line into the console and wait (~5–10 min).
+
+   Or after pushing this repo:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/ateames/vibecode-collab/dev-prod-1/deploy/digitalocean/console-install.sh | bash
+   ```
+
 5. Save admin password from `/opt/vibecode-collab/deploy/digitalocean/secrets.env` on the server.
 
 ## Option B — SSH deploy (from your Mac)

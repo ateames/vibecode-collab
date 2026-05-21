@@ -6,19 +6,31 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SSH_HOST="${SSH_HOST:-137.184.183.96}"
 SSH_USER="${SSH_USER:-root}"
 REMOTE_DEPLOY_DIR="${REMOTE_DEPLOY_DIR:-/opt/vibecode-collab}"
-SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=15)
+SSH_IDENTITY_FILE="${SSH_IDENTITY_FILE:-${HOME}/.ssh/digitalocean_cursor}"
+SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=15 -o IdentitiesOnly=yes)
+if [[ -f "${SSH_IDENTITY_FILE}" ]]; then
+  SSH_OPTS+=(-i "${SSH_IDENTITY_FILE}")
+fi
+RSYNC_SSH="ssh ${SSH_OPTS[*]}"
 
 echo "==> Checking SSH to ${SSH_USER}@${SSH_HOST}"
 if ! ssh "${SSH_OPTS[@]}" "${SSH_USER}@${SSH_HOST}" 'echo ok' >/dev/null 2>&1; then
+  DO_PUB="${HOME}/.ssh/digitalocean_cursor.pub"
   cat <<EOF >&2
 
-SSH failed. Add your public key to the droplet first:
+SSH failed. The key must be in /root/.ssh/authorized_keys on the droplet.
 
-  1. DigitalOcean → Droplets → vibe-code-collab-prod → Access → Add SSH key
-  2. Or paste this key in the droplet console:
-$(cat "${HOME}/.ssh/id_ed25519.pub" 2>/dev/null || cat "${HOME}/.ssh/id_rsa.pub" 2>/dev/null || echo "  (no local .pub key found)")
+  Fingerprint expected: $(ssh-keygen -lf "${DO_PUB}" 2>/dev/null || echo "unknown")
 
-  3. Retry: SSH_HOST=${SSH_HOST} SSH_USER=${SSH_USER} ./scripts/remote-deploy-lemmy.sh
+  1. DO → Droplet → Access → ensure this key is attached to vibe-code-collab-prod
+  2. Or paste in Droplet Console (as root):
+$(cat "${DO_PUB}" 2>/dev/null || echo "  (missing ${DO_PUB})")
+
+     mkdir -p /root/.ssh && chmod 700 /root/.ssh
+     echo 'PASTE_LINE_ABOVE' >> /root/.ssh/authorized_keys
+     chmod 600 /root/.ssh/authorized_keys
+
+  3. Retry: ./scripts/remote-deploy-lemmy.sh
 
 EOF
   exit 1
@@ -26,9 +38,9 @@ fi
 
 echo "==> Syncing deploy bundle to ${REMOTE_DEPLOY_DIR}"
 ssh "${SSH_OPTS[@]}" "${SSH_USER}@${SSH_HOST}" "mkdir -p ${REMOTE_DEPLOY_DIR}"
-rsync -az --delete \
+rsync -az --delete -e "${RSYNC_SSH}" \
   "${ROOT}/deploy/" "${SSH_USER}@${SSH_HOST}:${REMOTE_DEPLOY_DIR}/deploy/"
-rsync -az \
+rsync -az -e "${RSYNC_SSH}" \
   "${ROOT}/scripts/droplet/" "${SSH_USER}@${SSH_HOST}:${REMOTE_DEPLOY_DIR}/scripts/droplet/"
 
 echo "==> Installing Docker, firewall, Caddy, Lemmy"
