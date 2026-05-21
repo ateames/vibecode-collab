@@ -77,13 +77,44 @@ sed -i "s/PICTRS__SERVER__API_KEY=.*/PICTRS__SERVER__API_KEY=${PICTRS_API_KEY}/"
 sed -i "s/POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=${POSTGRES_PASSWORD}/" docker-compose.yml
 sed -i 's/- "1236:1236"/- "127.0.0.1:1236:1236"/' docker-compose.yml
 sed -i 's/- "8536:8536"//' docker-compose.yml
-sed -i '/- "5433:5432"/d' docker-compose.yml
+# Drop postgres host port; delete ports: key too (empty ports: is invalid YAML)
+sed -i '/^  postgres:/,/^  [a-z_-]*:/ {
+  /- "5433:5432"/d
+  /^    ports:$/d
+}' docker-compose.yml
 sed -i '/LEMMY_DISABLE_ACTIVITY_SENDING/d' docker-compose.yml
-sed -i '/^  lemmy:/,/^  lemmy-ui:/ s/^    build:/    # build:/' docker-compose.yml
-grep -q 'image: dessalines/lemmy' docker-compose.yml || sed -i "/^  lemmy:/a\\    image: dessalines/lemmy:${LEMMY_IMAGE_TAG}" docker-compose.yml
+# Production image: delete build block and always set image (safe on re-run).
+sed -i '/^  lemmy:/,/^  lemmy-ui:/ {
+  /^    build:/d
+  /^    # build:/d
+  /^      context:/d
+  /^      dockerfile:/d
+}' docker-compose.yml
+if ! grep -qE '^[[:space:]]+image: dessalines/lemmy' docker-compose.yml; then
+  sed -i "/^  lemmy:/a\\    image: dessalines/lemmy:${LEMMY_IMAGE_TAG}" docker-compose.yml
+fi
 
-docker compose pull
-docker compose up -d
+install -d -m 0755 "${DEPLOY_DIR}/deploy/digitalocean"
+cat >"${DEPLOY_DIR}/deploy/digitalocean/docker-compose.prod.yml" <<PROD
+services:
+  proxy:
+    ports:
+      - "127.0.0.1:1236:1236"
+  lemmy:
+    image: dessalines/lemmy:${LEMMY_IMAGE_TAG}
+    environment:
+      - RUST_LOG=warn
+  lemmy-ui:
+    environment:
+      - LEMMY_UI_BACKEND=lemmy:8536
+      - LEMMY_UI_HTTPS=true
+      - LEMMY_UI_ERUDA=false
+PROD
+
+COMPOSE=(docker compose -f docker-compose.yml -f "${DEPLOY_DIR}/deploy/digitalocean/docker-compose.prod.yml")
+"${COMPOSE[@]}" config >/dev/null
+"${COMPOSE[@]}" pull
+"${COMPOSE[@]}" up -d
 
 # Caddy
 apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https

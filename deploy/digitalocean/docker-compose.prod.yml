@@ -18,5 +18,4 @@ services:
       - LEMMY_UI_HTTPS=true
       - LEMMY_UI_ERUDA=false
 
-  postgres:
-    ports: !reset []
+  # Postgres host port removed in base compose by install scripts (do not leave ports: empty).

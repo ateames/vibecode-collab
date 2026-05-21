@@ -52,6 +52,22 @@ ssh root@137.184.183.96 'cat /opt/vibecode-collab/deploy/digitalocean/secrets.en
 
 Remove the `setup { ... }` block from `/opt/lemmy/docker/lemmy.hjson` after first admin login.
 
+## Troubleshooting compose / Caddy
+
+**`service "lemmy" has neither an image nor a build context`** — the install script commented out `build:` but left `context:` / `dockerfile:`, or a re-run skipped adding `image:`. On the droplet:
+
+```bash
+cd /opt/lemmy/docker
+sed -i '/^  lemmy:/,/^  lemmy-ui:/ { /^    build:/d; /^    # build:/d; /^      context:/d; /^      dockerfile:/d; }' docker-compose.yml
+grep -qE '^[[:space:]]+image: dessalines/lemmy' docker-compose.yml || sed -i '/^  lemmy:/a\    image: dessalines/lemmy:0.19.18' docker-compose.yml
+sed -i '/^  postgres:/,/^  [a-z_-]*:/ { /- "5433:5432"/d; /^    ports:$/d; }' docker-compose.yml
+docker compose -f docker-compose.yml -f /opt/vibecode-collab/deploy/digitalocean/docker-compose.prod.yml config >/dev/null && echo compose OK
+```
+
+Re-run `./scripts/print-console-install.sh` from your Mac after pulling these fixes, or use `./scripts/remote-deploy-lemmy.sh`.
+
+**`Unit caddy.service not found`** — Caddy installs only after `docker compose up` succeeds. Fix compose first, then install Caddy (`install-caddy.sh` or re-run console install).
+
 ## Cloudflare SSL (recommended)
 
 1. **SSL/TLS** → **Full (strict)** for `vibecodecollab.com`.
