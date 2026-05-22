@@ -37,7 +37,7 @@ EOF
 fi
 
 echo "==> Syncing deploy bundle to ${REMOTE_DEPLOY_DIR}"
-ssh "${SSH_OPTS[@]}" "${SSH_USER}@${SSH_HOST}" "mkdir -p ${REMOTE_DEPLOY_DIR}"
+ssh "${SSH_OPTS[@]}" "${SSH_USER}@${SSH_HOST}" "mkdir -p ${REMOTE_DEPLOY_DIR}/deploy ${REMOTE_DEPLOY_DIR}/scripts/droplet"
 rsync -az --delete -e "${RSYNC_SSH}" \
   "${ROOT}/deploy/" "${SSH_USER}@${SSH_HOST}:${REMOTE_DEPLOY_DIR}/deploy/"
 rsync -az -e "${RSYNC_SSH}" \

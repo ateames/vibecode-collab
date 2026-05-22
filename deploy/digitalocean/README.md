@@ -124,6 +124,22 @@ Cron example (weekly Sunday 03:00 UTC):
 
 ## Updates
 
+From your Mac (branch `dev-prod-1` checked out):
+
+```bash
+./scripts/remote-deploy-lemmy.sh
+```
+
+If SSH times out, use the **Droplet web console** (no laptop SSH):
+
+```bash
+./scripts/print-console-update.sh
+```
+
+Paste the printed line as `root`. That pulls `dev-prod-1` from GitHub into `/opt/vibecode-collab`, restarts Compose with the low-memory Postgres override, and checks the API.
+
+Manual (on server):
+
 ```bash
 cd /opt/lemmy/docker
 git pull
