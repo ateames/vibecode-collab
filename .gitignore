@@ -46,3 +46,4 @@ tmp/
 .cache/
 .pnpm-store/*
 .venv*
+deploy/digitalocean/lemmy.hjson
