@@ -5,7 +5,11 @@
   "scripts": {
     "build:web:prod": "bash scripts/build-blorp-prod.sh",
     "deploy:cloudflare:prod": "bash scripts/deploy-cloudflare-pages.sh",
-    "deploy:lemmy:prod": "bash scripts/remote-deploy-lemmy.sh"
+    "deploy:lemmy:prod": "bash scripts/remote-deploy-lemmy.sh",
+    "bots:dev": "pnpm --dir services/bots dev",
+    "bots:migrate": "pnpm --dir services/bots db:migrate",
+    "bots:seed": "pnpm --dir services/bots seed:queue",
+    "bots:test": "pnpm --dir services/bots test"
   },
   "devDependencies": {
     "wrangler": "^4.24.0"

@@ -1,0 +1,85 @@
+# Bot posting admin (MVP)
+
+Manual review queue for `@ai_tool_news_bot` and `@github_projects_bot`. Post or ignore queued items via a small admin UI; posts go to Lemmy through the v3 API.
+
+## Quick start (local)
+
+```bash
+cd services/bots
+cp .env.example .env
+# Edit .env: ADMIN_API_TOKEN, bot passwords, LEMMY_BASE_URL
+
+pnpm install
+pnpm db:migrate
+
+# Resolve community IDs (requires communities to exist on the instance)
+pnpm lemmy:resolve-communities
+# Copy printed IDs into .env
+
+pnpm seed:queue
+pnpm dev
+```
+
+Open [http://127.0.0.1:3030/admin](http://127.0.0.1:3030/admin), set the API token (same as `ADMIN_API_TOKEN`), and use Post / Ignore.
+
+## API
+
+All `/admin/bot-posts/*` routes require `Authorization: Bearer <ADMIN_API_TOKEN>`.
+
+
+| Method | Path                          | Description                  |
+| ------ | ----------------------------- | ---------------------------- |
+| GET    | `/health`                     | Liveness (no auth)           |
+| GET    | `/admin`                      | Admin HTML UI                |
+| GET    | `/admin/bot-posts/pending`    | Pending + failed queue items |
+| POST   | `/admin/bot-posts/:id/post`   | Post to Lemmy                |
+| POST   | `/admin/bot-posts/:id/ignore` | Mark ignored                 |
+
+
+## Setup checklist
+
+1. Create Lemmy users `ai_tool_news_bot` and `github_projects_bot`.
+2. Create bot target communities on Lemmy (or reuse existing ones). Set `*_COMMUNITY_NAME` to each community’s **slug** (the `/c/<slug>` segment), e.g. `tools_and_workflows` — not the display title. Add bots as members (mods if required).
+3. Run `pnpm lemmy:resolve-communities` and copy the printed `*_COMMUNITY_ID` lines into `.env`.
+4. Run `pnpm lemmy:mark-bot-accounts` (or set bot flag in lemmy-ui profile).
+5. Configure `services/bots/.env` (see `.env.example`).
+6. `pnpm db:migrate && pnpm seed:queue`.
+7. `pnpm dev` locally, or run on the droplet bound to `127.0.0.1` and use SSH port forwarding.
+
+## Production (droplet)
+
+Run on the server (not public):
+
+```bash
+# On droplet, after cloning deployment repo
+cd services/bots
+cp .env.example .env   # fill production values
+pnpm install
+pnpm db:migrate
+pnpm start             # or use systemd — see deploy/digitalocean/bots-admin.service.example
+```
+
+Access admin from your machine:
+
+```bash
+ssh -L 3030:127.0.0.1:3030 user@your-droplet
+# Then open http://localhost:3030/admin
+```
+
+## Scripts
+
+
+| Script                           | Purpose                               |
+| -------------------------------- | ------------------------------------- |
+| `pnpm db:migrate`                | Apply SQLite schema                   |
+| `pnpm seed:queue`                | Insert sample pending items           |
+| `pnpm lemmy:resolve-communities` | Print community IDs for `.env`        |
+| `pnpm lemmy:mark-bot-accounts`   | Set `bot_account: true` for bot users |
+| `pnpm test`                      | Unit tests                            |
+
+
+## Security
+
+- Service defaults to `HOST=127.0.0.1` — not exposed on the public internet.
+- Protect with a long `ADMIN_API_TOKEN`.
+- Never commit `.env` or bot passwords.

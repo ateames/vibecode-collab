@@ -96,6 +96,7 @@ vibecode-collab/          ← THIS REPO (deployment + docs)
 ├── docs/
 ├── deploy/               ← DO / Cloudflare (Wrangler Pages upload)
 ├── scripts/
+├── services/bots/      ← manual bot-posting admin (queue + Lemmy API)
 ├── .env.example
 ├── lemmy/                ← separate git repo (gitignored here)
 └── blorp/                ← separate git repo (gitignored here)

@@ -1,0 +1,21 @@
+# Example systemd unit for the bot admin service on the Lemmy droplet.
+# Install:
+#   sudo cp deploy/digitalocean/bots-admin.service.example /etc/systemd/system/bots-admin.service
+#   sudo systemctl edit bots-admin   # set WorkingDirectory, User, EnvironmentFile
+#   sudo systemctl enable --now bots-admin
+
+[Unit]
+Description=Vibe Code Collab bot posting admin
+After=network.target docker.service
+
+[Service]
+Type=simple
+User=deploy
+WorkingDirectory=/opt/vibecode-collab/services/bots
+EnvironmentFile=/opt/vibecode-collab/services/bots/.env
+ExecStart=/usr/bin/corepack pnpm start
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
