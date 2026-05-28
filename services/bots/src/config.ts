@@ -14,6 +14,19 @@ const optionalPositiveInt = z.preprocess((value) => {
   return Number.isFinite(num) ? num : value;
 }, z.number().int().positive().optional());
 
+const commaSeparatedUrls = z.preprocess((value) => {
+  if (value === "" || value === undefined || value === null) {
+    return [];
+  }
+  if (typeof value !== "string") {
+    return value;
+  }
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+}, z.array(z.string().url()));
+
 const envSchema = z.object({
   PORT: z.coerce.number().default(3030),
   HOST: z.string().default("127.0.0.1"),
@@ -28,6 +41,16 @@ const envSchema = z.object({
   GITHUB_PROJECTS_BOT_PASSWORD: z.string().min(1),
   GITHUB_PROJECTS_BOT_COMMUNITY_ID: optionalPositiveInt,
   GITHUB_PROJECTS_BOT_COMMUNITY_NAME: z.string().default("github_projects"),
+  GITHUB_TOKEN: z.string().optional(),
+  GITHUB_SEARCH_QUERY: z.string().default(""),
+  GITHUB_SEARCH_SORT: z
+    .enum(["stars", "forks", "help-wanted-issues", "updated"])
+    .default("stars"),
+  GITHUB_SEARCH_PER_PAGE: z.coerce.number().int().min(1).max(100).default(10),
+  GITHUB_MAX_AGE_DAYS: z.coerce.number().int().positive().default(90),
+  AI_NEWS_RSS_URLS: commaSeparatedUrls,
+  AI_NEWS_MAX_ITEMS_PER_FEED: z.coerce.number().int().min(1).max(50).default(5),
+  AI_NEWS_MAX_AGE_DAYS: z.coerce.number().int().positive().default(14),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -86,4 +109,62 @@ export function getBotCredentials(botAccount: string): BotCredentials {
 
 export function getLemmyBaseUrl(): string {
   return getEnv().LEMMY_BASE_URL.replace(/\/$/, "");
+}
+
+export type IngestCommunityConfig = {
+  aiToolNewsCommunityId: number;
+  aiToolNewsCommunityName: string;
+  githubProjectsCommunityId: number;
+  githubProjectsCommunityName: string;
+};
+
+export function getIngestCommunityConfig(): IngestCommunityConfig {
+  const env = getEnv();
+  if (!env.AI_TOOL_NEWS_COMMUNITY_ID) {
+    throw new Error(
+      "Missing AI_TOOL_NEWS_COMMUNITY_ID. Run: pnpm lemmy:resolve-communities",
+    );
+  }
+  if (!env.GITHUB_PROJECTS_BOT_COMMUNITY_ID) {
+    throw new Error(
+      "Missing GITHUB_PROJECTS_BOT_COMMUNITY_ID. Run: pnpm lemmy:resolve-communities",
+    );
+  }
+  return {
+    aiToolNewsCommunityId: env.AI_TOOL_NEWS_COMMUNITY_ID,
+    aiToolNewsCommunityName: env.AI_TOOL_NEWS_COMMUNITY_NAME,
+    githubProjectsCommunityId: env.GITHUB_PROJECTS_BOT_COMMUNITY_ID,
+    githubProjectsCommunityName: env.GITHUB_PROJECTS_BOT_COMMUNITY_NAME,
+  };
+}
+
+export type IngestSource = "github" | "rss" | "all";
+
+export function parseIngestSources(value: unknown): IngestSource[] {
+  if (value === undefined || value === null) {
+    return ["github", "rss"];
+  }
+  if (value === "all") {
+    return ["github", "rss"];
+  }
+  if (!Array.isArray(value)) {
+    throw new Error('sources must be an array of "github", "rss", or "all"');
+  }
+  const allowed = new Set<IngestSource>(["github", "rss", "all"]);
+  const sources: IngestSource[] = [];
+  for (const item of value) {
+    if (typeof item !== "string" || !allowed.has(item as IngestSource)) {
+      throw new Error('Each source must be "github", "rss", or "all"');
+    }
+    if (item === "all") {
+      return ["github", "rss"];
+    }
+    if (!sources.includes(item as IngestSource)) {
+      sources.push(item as IngestSource);
+    }
+  }
+  if (sources.length === 0) {
+    return ["github", "rss"];
+  }
+  return sources;
 }

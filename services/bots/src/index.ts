@@ -16,6 +16,10 @@ async function main() {
   const env = getEnv();
   const db = createDb(env.DATABASE_URL);
   const queue = new QueueService(db);
+  const resetCount = await queue.resetStalePosting();
+  if (resetCount > 0) {
+    console.log(`Reset ${resetCount} stale posting item(s) to pending`);
+  }
   const lemmy = new LemmyPostingService();
 
   const app = new Hono();

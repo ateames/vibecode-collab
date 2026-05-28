@@ -19,6 +19,9 @@ export type QueueItemInput = {
   targetCommunity: string;
   targetCommunityId: number;
   sourceType: SourceType;
+  sourceExternalId?: string | null;
+  sourceUrl?: string | null;
+  ingestedAt?: string | null;
 };
 
 export type QueueItemDto = {
@@ -34,6 +37,9 @@ export type QueueItemDto = {
   lemmyPostId: number | null;
   lemmyPostUrl: string | null;
   errorMessage: string | null;
+  sourceExternalId: string | null;
+  sourceUrl: string | null;
+  ingestedAt: string | null;
   createdAt: string;
   updatedAt: string;
   postedAt: string | null;
@@ -54,6 +60,9 @@ function toDto(row: QueuedBotPost): QueueItemDto {
     lemmyPostId: row.lemmyPostId,
     lemmyPostUrl: row.lemmyPostUrl,
     errorMessage: row.errorMessage,
+    sourceExternalId: row.sourceExternalId,
+    sourceUrl: row.sourceUrl,
+    ingestedAt: row.ingestedAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     postedAt: row.postedAt,
@@ -83,8 +92,27 @@ export class QueueService {
     return row ? toDto(row) : null;
   }
 
+  async findByExternalId(
+    sourceType: SourceType,
+    sourceExternalId: string,
+  ): Promise<QueueItemDto | null> {
+    const rows = await this.db
+      .select()
+      .from(queuedBotPosts)
+      .where(
+        and(
+          eq(queuedBotPosts.sourceType, sourceType),
+          eq(queuedBotPosts.sourceExternalId, sourceExternalId),
+        ),
+      )
+      .limit(1);
+    const row = rows[0];
+    return row ? toDto(row) : null;
+  }
+
   async insert(item: QueueItemInput): Promise<QueueItemDto> {
     const now = nowIso();
+    const ingestedAt = item.ingestedAt ?? now;
     const row: NewQueuedBotPost = {
       id: randomUUID(),
       title: item.title,
@@ -94,12 +122,40 @@ export class QueueService {
       targetCommunity: item.targetCommunity,
       targetCommunityId: item.targetCommunityId,
       sourceType: item.sourceType,
+      sourceExternalId: item.sourceExternalId ?? null,
+      sourceUrl: item.sourceUrl ?? null,
+      ingestedAt: item.sourceExternalId ? ingestedAt : null,
       status: "pending",
       createdAt: now,
       updatedAt: now,
     };
     await this.db.insert(queuedBotPosts).values(row);
     return toDto(row as QueuedBotPost);
+  }
+
+  async insertIfNew(
+    item: QueueItemInput & { sourceExternalId: string },
+  ): Promise<{ created: boolean; item: QueueItemDto }> {
+    const existing = await this.findByExternalId(
+      item.sourceType,
+      item.sourceExternalId,
+    );
+    if (existing) {
+      return { created: false, item: existing };
+    }
+    const inserted = await this.insert(item);
+    return { created: true, item: inserted };
+  }
+
+  async resetStalePosting(): Promise<number> {
+    const rows = await this.db
+      .select({ id: queuedBotPosts.id })
+      .from(queuedBotPosts)
+      .where(eq(queuedBotPosts.status, "posting"));
+    for (const row of rows) {
+      await this.resetPostingToPending(row.id);
+    }
+    return rows.length;
   }
 
   async ignore(id: string): Promise<QueueItemDto | null> {

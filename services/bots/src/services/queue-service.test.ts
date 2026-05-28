@@ -10,16 +10,22 @@ describe("QueueService", () => {
     const fs = await import("node:fs");
     const path = await import("node:path");
     const { fileURLToPath } = await import("node:url");
-    const migrationPath = path.resolve(
+    const migrationsDir = path.resolve(
       path.dirname(fileURLToPath(import.meta.url)),
-      "../../drizzle/0000_init.sql",
+      "../../drizzle",
     );
-    const sql = fs.readFileSync(migrationPath, "utf8");
-    for (const statement of sql
-      .split(/--> statement-breakpoint\n?/)
-      .map((s) => s.trim())
-      .filter(Boolean)) {
-      sqlite.exec(statement);
+    const migrationFiles = fs
+      .readdirSync(migrationsDir)
+      .filter((name) => name.endsWith(".sql"))
+      .sort();
+    for (const file of migrationFiles) {
+      const sql = fs.readFileSync(path.join(migrationsDir, file), "utf8");
+      for (const statement of sql
+        .split(/--> statement-breakpoint\n?/)
+        .map((s) => s.trim())
+        .filter(Boolean)) {
+        sqlite.exec(statement);
+      }
     }
     const { drizzle } = await import("drizzle-orm/better-sqlite3");
     const schema = await import("../db/schema.js");
@@ -61,6 +67,24 @@ describe("QueueService", () => {
     const ignored = await queue.ignore(item.id);
     expect(ignored?.status).toBe("ignored");
     expect(ignored?.ignoredAt).toBeTruthy();
+  });
+
+  it("insertIfNew skips duplicates by source_external_id", async () => {
+    const input = {
+      title: "Repo",
+      url: "https://github.com/o/r",
+      botAccount: "github_projects_bot" as const,
+      targetCommunity: "GitHub Projects",
+      targetCommunityId: 2,
+      sourceType: "github_project" as const,
+      sourceExternalId: "github:repo:o/r",
+      sourceUrl: "https://github.com/o/r",
+    };
+    const first = await queue.insertIfNew(input);
+    expect(first.created).toBe(true);
+    const second = await queue.insertIfNew({ ...input, title: "Other title" });
+    expect(second.created).toBe(false);
+    expect(second.item.id).toBe(first.item.id);
   });
 
   it("claimForPosting only works for pending or failed", async () => {

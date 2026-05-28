@@ -71,6 +71,7 @@
     </p>
     <div class="toolbar">
       <button type="button" id="refresh">Refresh</button>
+      <button type="button" id="fetch-ingest">Fetch new content</button>
       <button type="button" id="set-token">Set API token</button>
       <span id="token-status" class="muted"></span>
     </div>
@@ -220,7 +221,46 @@
         }
       }
 
+      function formatIngestResult(result) {
+        const parts = [];
+        const gh = result.github || {};
+        const rss = result.rss || {};
+        parts.push(
+          `GitHub: ${gh.inserted ?? 0} added, ${gh.skipped ?? 0} skipped`,
+        );
+        parts.push(
+          `News: ${rss.inserted ?? 0} added, ${rss.skipped ?? 0} skipped`,
+        );
+        const errors = [...(gh.errors || []), ...(rss.errors || [])];
+        if (errors.length > 0) {
+          parts.push(`Errors: ${errors.join("; ")}`);
+        }
+        return parts.join(" · ");
+      }
+
+      async function fetchIngest() {
+        const button = document.getElementById("fetch-ingest");
+        button.disabled = true;
+        setMessage("Fetching new content…");
+        try {
+          const result = await api("/admin/bot-posts/ingest", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sources: ["all"] }),
+          });
+          setMessage(formatIngestResult(result));
+          await loadQueue();
+        } catch (err) {
+          setMessage(err.message, true);
+        } finally {
+          button.disabled = false;
+        }
+      }
+
       document.getElementById("refresh").addEventListener("click", loadQueue);
+      document
+        .getElementById("fetch-ingest")
+        .addEventListener("click", fetchIngest);
       document.getElementById("set-token").addEventListener("click", () => {
         const value = prompt("Enter ADMIN_API_TOKEN:");
         if (value) {

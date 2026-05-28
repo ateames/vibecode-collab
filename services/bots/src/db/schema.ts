@@ -38,6 +38,9 @@ export const queuedBotPosts = sqliteTable(
     lemmyPostUrl: text("lemmy_post_url"),
     lemmyResponseJson: text("lemmy_response_json"),
     errorMessage: text("error_message"),
+    sourceExternalId: text("source_external_id"),
+    sourceUrl: text("source_url"),
+    ingestedAt: text("ingested_at"),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
     postedAt: text("posted_at"),
@@ -47,6 +50,10 @@ export const queuedBotPosts = sqliteTable(
     index("queued_bot_posts_status_created_idx").on(
       table.status,
       table.createdAt,
+    ),
+    index("queued_bot_posts_source_dedup_idx").on(
+      table.sourceType,
+      table.sourceExternalId,
     ),
   ],
 );

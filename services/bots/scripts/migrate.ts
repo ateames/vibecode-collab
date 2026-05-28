@@ -14,22 +14,38 @@ function resolveDatabasePath(databaseUrl: string): string {
 
 const databaseUrl = process.env.DATABASE_URL ?? "file:./data/bot-queue.db";
 const dbPath = resolveDatabasePath(databaseUrl);
-const migrationPath = path.resolve(
-  process.cwd(),
-  "drizzle/0000_init.sql",
-);
+const migrationsDir = path.resolve(process.cwd(), "drizzle");
+const migrationFiles = fs
+  .readdirSync(migrationsDir)
+  .filter((name) => name.endsWith(".sql"))
+  .sort();
 
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 const db = new Database(dbPath);
 
-const sql = fs.readFileSync(migrationPath, "utf8");
-const statements = sql
-  .split(/--> statement-breakpoint\n?/)
-  .map((s) => s.trim())
-  .filter(Boolean);
+for (const file of migrationFiles) {
+  const sql = fs.readFileSync(path.join(migrationsDir, file), "utf8");
+  const statements = sql
+    .split(/--> statement-breakpoint\n?/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 
-for (const statement of statements) {
-  db.exec(statement);
+  for (const statement of statements) {
+    try {
+      db.exec(statement);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error);
+      if (
+        message.includes("duplicate column name") ||
+        message.includes("already exists")
+      ) {
+        continue;
+      }
+      throw error;
+    }
+  }
+  console.log(`Applied ${file}`);
 }
 
 console.log(`Migrated database at ${dbPath}`);

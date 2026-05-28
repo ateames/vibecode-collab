@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import type { BotAccount } from "../db/schema.js";
+import { parseIngestSources } from "../config.js";
+import { runIngest } from "../ingest/run-ingest.js";
 import { formatError } from "../lib/errors.js";
 import { requireAdminAuth } from "../middleware/auth.js";
 import {
@@ -19,6 +21,19 @@ export function createAdminBotPostsRoutes(
   app.get("/pending", async (c) => {
     const items = await queue.listPending();
     return c.json({ items });
+  });
+
+  app.post("/ingest", async (c) => {
+    try {
+      const body = await c.req.json().catch(() => ({}));
+      const sources = parseIngestSources(
+        (body as { sources?: unknown }).sources ?? undefined,
+      );
+      const result = await runIngest(queue, sources);
+      return c.json(result);
+    } catch (error) {
+      return c.json({ error: formatError(error) }, 400);
+    }
   });
 
   app.post("/:id/ignore", async (c) => {

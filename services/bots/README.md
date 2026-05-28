@@ -20,7 +20,7 @@ pnpm seed:queue
 pnpm dev
 ```
 
-Open [http://127.0.0.1:3030/admin](http://127.0.0.1:3030/admin), set the API token (same as `ADMIN_API_TOKEN`), and use Post / Ignore.
+Open [http://127.0.0.1:3030/admin](http://127.0.0.1:3030/admin), set the API token (same as `ADMIN_API_TOKEN`), click **Fetch new content** to ingest from GitHub/RSS, then use Post / Ignore.
 
 ## API
 
@@ -32,6 +32,7 @@ All `/admin/bot-posts/*` routes require `Authorization: Bearer <ADMIN_API_TOKEN>
 | GET    | `/health`                     | Liveness (no auth)           |
 | GET    | `/admin`                      | Admin HTML UI                |
 | GET    | `/admin/bot-posts/pending`    | Pending + failed queue items |
+| POST   | `/admin/bot-posts/ingest`     | Fetch GitHub + RSS into queue |
 | POST   | `/admin/bot-posts/:id/post`   | Post to Lemmy                |
 | POST   | `/admin/bot-posts/:id/ignore` | Mark ignored                 |
 
@@ -65,6 +66,26 @@ Access admin from your machine:
 ssh -L 3030:127.0.0.1:3030 user@your-droplet
 # Then open http://localhost:3030/admin
 ```
+
+## Content ingestion
+
+Configure in `.env` (see `.env.example`):
+
+- **GitHub projects** — `GITHUB_TOKEN` (recommended), `GITHUB_SEARCH_QUERY`, `GITHUB_SEARCH_PER_PAGE`, `GITHUB_MAX_AGE_DAYS`
+- **AI tool news** — `AI_NEWS_RSS_URLS` (comma-separated feed URLs), `AI_NEWS_MAX_ITEMS_PER_FEED`, `AI_NEWS_MAX_AGE_DAYS`
+
+Example GitHub query: `topic:ai-coding+stars:>50+pushed:>2025-01-01`
+
+Ingest via admin **Fetch new content** or API:
+
+```bash
+curl -X POST http://127.0.0.1:3030/admin/bot-posts/ingest \
+  -H "Authorization: Bearer $ADMIN_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"sources":["all"]}'
+```
+
+Duplicates are skipped using `(source_type, source_external_id)`.
 
 ## Scripts
 
