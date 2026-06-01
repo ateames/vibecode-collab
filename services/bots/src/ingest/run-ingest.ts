@@ -1,12 +1,14 @@
 import {
   getEnv,
   getIngestCommunityConfig,
+  getSummarizerConfig,
   type IngestSource,
 } from "../config.js";
 import type { QueueService } from "../services/queue-service.js";
 import { collectGitHubCandidates } from "./github-search.js";
 import { fetchRssCandidates } from "./rss.js";
 import type { IngestCandidate, IngestRunResult, IngestSourceResult } from "./types.js";
+import { enrichCandidateWithSummary } from "../summarize/enrich-candidate.js";
 
 async function enqueueCandidates(
   queue: QueueService,
@@ -14,9 +16,11 @@ async function enqueueCandidates(
 ): Promise<IngestSourceResult> {
   let inserted = 0;
   let skipped = 0;
+  const summarizerConfig = getSummarizerConfig();
 
   for (const candidate of candidates) {
-    const result = await queue.insertIfNew(candidate);
+    const enriched = await enrichCandidateWithSummary(candidate, summarizerConfig);
+    const result = await queue.insertIfNew(enriched);
     if (result.created) {
       inserted += 1;
     } else {

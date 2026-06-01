@@ -87,6 +87,20 @@ curl -X POST http://127.0.0.1:3030/admin/bot-posts/ingest \
 
 Duplicates are skipped using `(source_type, source_external_id)`.
 
+## AI summaries
+
+When `OPENAI_API_KEY` is set and `SUMMARIZER_ENABLED=true` (default), ingest generates a 2–3 sentence summary for each new link before it enters the queue. Summaries are stored in `body`, shown in the admin **Summary** column, and published to Lemmy so they appear in Blorp feed cards.
+
+Configure in `.env`:
+
+- `OPENAI_API_KEY` — required for summaries; omit to keep RSS/GitHub excerpts only
+- `OPENAI_MODEL` — default `gpt-4o-mini`
+- `SUMMARIZER_ENABLED` — set `false` to disable without removing the key
+- `SUMMARY_MIN_SOURCE_CHARS` — fetch linked page when RSS excerpt is shorter (default `200`)
+- `SUMMARY_MAX_OUTPUT_CHARS` — cap summary length (default `300`)
+
+GitHub project links use the repo README when available; news links use the RSS excerpt or fetch the article HTML as fallback. Failed summaries do not block ingest — the original body is kept.
+
 ## Scripts
 
 

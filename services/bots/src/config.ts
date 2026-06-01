@@ -51,6 +51,16 @@ const envSchema = z.object({
   AI_NEWS_RSS_URLS: commaSeparatedUrls,
   AI_NEWS_MAX_ITEMS_PER_FEED: z.coerce.number().int().min(1).max(50).default(5),
   AI_NEWS_MAX_AGE_DAYS: z.coerce.number().int().positive().default(14),
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_MODEL: z.string().default("gpt-4o-mini"),
+  SUMMARIZER_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
+  SUMMARY_MIN_SOURCE_CHARS: z.coerce.number().int().min(0).default(200),
+  SUMMARY_MAX_OUTPUT_CHARS: z.coerce.number().int().min(50).max(2000).default(300),
+  PAGE_FETCH_TIMEOUT_MS: z.coerce.number().int().min(1000).default(10_000),
+  PAGE_FETCH_MAX_BYTES: z.coerce.number().int().min(10_000).default(500_000),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -136,6 +146,36 @@ export function getIngestCommunityConfig(): IngestCommunityConfig {
     githubProjectsCommunityId: env.GITHUB_PROJECTS_BOT_COMMUNITY_ID,
     githubProjectsCommunityName: env.GITHUB_PROJECTS_BOT_COMMUNITY_NAME,
   };
+}
+
+export type SummarizerConfig = Pick<
+  Env,
+  | "OPENAI_API_KEY"
+  | "OPENAI_MODEL"
+  | "SUMMARIZER_ENABLED"
+  | "SUMMARY_MIN_SOURCE_CHARS"
+  | "SUMMARY_MAX_OUTPUT_CHARS"
+  | "PAGE_FETCH_TIMEOUT_MS"
+  | "PAGE_FETCH_MAX_BYTES"
+  | "GITHUB_TOKEN"
+>;
+
+export function getSummarizerConfig(): SummarizerConfig {
+  const env = getEnv();
+  return {
+    OPENAI_API_KEY: env.OPENAI_API_KEY,
+    OPENAI_MODEL: env.OPENAI_MODEL,
+    SUMMARIZER_ENABLED: env.SUMMARIZER_ENABLED,
+    SUMMARY_MIN_SOURCE_CHARS: env.SUMMARY_MIN_SOURCE_CHARS,
+    SUMMARY_MAX_OUTPUT_CHARS: env.SUMMARY_MAX_OUTPUT_CHARS,
+    PAGE_FETCH_TIMEOUT_MS: env.PAGE_FETCH_TIMEOUT_MS,
+    PAGE_FETCH_MAX_BYTES: env.PAGE_FETCH_MAX_BYTES,
+    GITHUB_TOKEN: env.GITHUB_TOKEN,
+  };
+}
+
+export function isSummarizerActive(config: SummarizerConfig): boolean {
+  return config.SUMMARIZER_ENABLED && Boolean(config.OPENAI_API_KEY?.trim());
 }
 
 export type IngestSource = "github" | "rss" | "all";

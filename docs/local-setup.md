@@ -94,7 +94,7 @@ pnpm seed:queue
 pnpm dev
 ```
 
-Open http://127.0.0.1:3030/admin and enter the same token as `ADMIN_API_TOKEN`. Use **Fetch new content** to pull GitHub repos (Search API) and AI news (RSS) into the queue after configuring `GITHUB_SEARCH_QUERY`, optional `GITHUB_TOKEN`, and `AI_NEWS_RSS_URLS` in `.env`. Full checklist: [services/bots/README.md](../services/bots/README.md).
+Open http://127.0.0.1:3030/admin and enter the same token as `ADMIN_API_TOKEN`. Use **Fetch new content** to pull GitHub repos (Search API) and AI news (RSS) into the queue after configuring `GITHUB_SEARCH_QUERY`, optional `GITHUB_TOKEN`, and `AI_NEWS_RSS_URLS` in `.env`. Optional: set `OPENAI_API_KEY` in `services/bots/.env` to generate AI summaries for each ingested link (shown in admin and Blorp after posting). Full checklist: [services/bots/README.md](../services/bots/README.md).
 
 From the workspace root you can also run `pnpm bots:dev`, `pnpm bots:migrate`, and `pnpm bots:seed`.
 

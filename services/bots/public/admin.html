@@ -80,6 +80,7 @@
       <thead>
         <tr>
           <th>Title</th>
+          <th>Summary</th>
           <th>Bot</th>
           <th>Community</th>
           <th>Source</th>
@@ -91,7 +92,7 @@
       </thead>
       <tbody id="queue-body">
         <tr>
-          <td colspan="8">Loading…</td>
+          <td colspan="9">Loading…</td>
         </tr>
       </tbody>
     </table>
@@ -142,10 +143,22 @@
         }
       }
 
+      function truncateText(str, max) {
+        const text = String(str || "").trim();
+        if (!text) {
+          return "—";
+        }
+        if (text.length <= max) {
+          return escapeHtml(text);
+        }
+        return escapeHtml(text.slice(0, max - 1)) + "…";
+      }
+
       function renderRow(item) {
         const urlCell = item.url
           ? `<a href="${item.url}" target="_blank" rel="noopener">${item.url}</a>`
           : "—";
+        const summaryCell = truncateText(item.body, 200);
         const statusClass =
           item.status === "failed" ? ' class="status-failed"' : "";
         const error =
@@ -154,6 +167,7 @@
             : "";
         return `<tr data-id="${item.id}">
           <td>${escapeHtml(item.title)}${error}</td>
+          <td class="muted">${summaryCell}</td>
           <td>${escapeHtml(item.botAccount)}</td>
           <td>${escapeHtml(item.targetCommunity)}</td>
           <td>${escapeHtml(item.sourceType)}</td>
@@ -182,14 +196,14 @@
           const items = data.items || [];
           if (items.length === 0) {
             tbody.innerHTML =
-              '<tr><td colspan="8">No pending or failed items.</td></tr>';
+              '<tr><td colspan="9">No pending or failed items.</td></tr>';
           } else {
             tbody.innerHTML = items.map(renderRow).join("");
           }
           setMessage("");
         } catch (err) {
           tbody.innerHTML =
-            '<tr><td colspan="8">Failed to load queue.</td></tr>';
+            '<tr><td colspan="9">Failed to load queue.</td></tr>';
           setMessage(err.message, true);
         }
       }
@@ -287,7 +301,7 @@
         loadQueue();
       } else {
         document.getElementById("queue-body").innerHTML =
-          '<tr><td colspan="8">Set API token to load queue.</td></tr>';
+          '<tr><td colspan="9">Set API token to load queue.</td></tr>';
       }
     </script>
   </body>
