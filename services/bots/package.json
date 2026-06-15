@@ -1,0 +1,39 @@
+{
+  "name": "@vibecode-collab/bots",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "seed:queue": "tsx scripts/seed-queue.ts",
+    "lemmy:resolve-communities": "tsx scripts/resolve-communities.ts",
+    "lemmy:mark-bot-accounts": "tsx scripts/mark-bot-accounts.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.4",
+    "better-sqlite3": "^11.10.0",
+    "dotenv": "^16.5.0",
+    "drizzle-orm": "^0.44.2",
+    "hono": "^4.7.11",
+    "lemmy-js-client": "0.19.13-beta.1",
+    "rss-parser": "^3.13.0",
+    "zod": "^3.25.56"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.15.30",
+    "drizzle-kit": "^0.31.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -18,5 +18,10 @@ services:
       - LEMMY_UI_HTTPS=true
       - LEMMY_UI_ERUDA=false
 
+  # Upstream customPostgresql.conf assumes 12 GB RAM; use lowmem on 2 GB droplets.
   postgres:
-    ports: !reset []
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql:Z
+      - /opt/vibecode-collab/deploy/digitalocean/customPostgresql.lowmem.conf:/etc/postgresql.conf:Z
+
+  # Postgres host port removed in base compose by install scripts (do not leave ports: empty).

@@ -25,10 +25,10 @@ This repo does **not** contain Lemmy or Blorp source code. Those live in **two s
 ```
 
 
-| Component          | Repo                                                                   | Deploy target    | Role                               |
-| ------------------ | ---------------------------------------------------------------------- | ---------------- | ---------------------------------- |
-| **This workspace** | *your* `vibecode-collab` (or similar)                                  | GitHub           | Docs, scripts, deploy templates    |
-| **Lemmy**          | *your fork* of [LemmyNet/lemmy](https://github.com/LemmyNet/lemmy)     | DigitalOcean     | Backend API, federation, database  |
+| Component          | Repo                                                                   | Deploy target    | Role                                            |
+| ------------------ | ---------------------------------------------------------------------- | ---------------- | ----------------------------------------------- |
+| **This workspace** | *your* `vibecode-collab` (or similar)                                  | GitHub           | Docs, scripts, deploy templates                 |
+| **Lemmy**          | *your fork* of [LemmyNet/lemmy](https://github.com/LemmyNet/lemmy)     | DigitalOcean     | Backend API, federation, database               |
 | **Blorp fork**     | *your fork* of [Blorp-Labs/blorp](https://github.com/Blorp-Labs/blorp) | Cloudflare Pages | Vibe Code Collab UI (replaces default lemmy-ui) |
 
 
@@ -96,6 +96,7 @@ vibecode-collab/          ← THIS REPO (deployment + docs)
 ├── docs/
 ├── deploy/               ← DO / Cloudflare (Wrangler Pages upload)
 ├── scripts/
+├── services/bots/      ← manual bot-posting admin (queue + Lemmy API)
 ├── .env.example
 ├── lemmy/                ← separate git repo (gitignored here)
 └── blorp/                ← separate git repo (gitignored here)
@@ -150,16 +151,16 @@ See [docs/repositories.md](docs/repositories.md) for sync with upstream and rele
 **Vibe Code Collab UI** (Blorp fork, build time on Cloudflare Pages) — copy from [blorp/.env.example](blorp/.env.example) after cloning:
 
 
-| Variable                             | Purpose                                    |
-| ------------------------------------ | ------------------------------------------ |
+| Variable                             | Purpose                                     |
+| ------------------------------------ | ------------------------------------------- |
 | `REACT_APP_NAME`                     | Display name in the UI (`Vibe Code Collab`) |
-| `REACT_APP_TAGLINE`                  | Subtitle in browser tab / SEO              |
-| `REACT_APP_PUBLIC_URL`               | Public app URL for legal pages             |
-| `REACT_APP_SUPPORT_EMAIL`            | Support contact email                      |
-| `REACT_APP_GITHUB_REPO`              | Optional GitHub repo for support links     |
-| `REACT_APP_DEFAULT_INSTANCE`         | Your Lemmy URL (must match production API) |
-| `REACT_APP_LOCK_TO_DEFAULT_INSTANCE` | `1` to restrict users to your instance     |
-| `REACT_APP_INSTANCE_SELECTION_MODE`  | e.g. `default_first`                       |
+| `REACT_APP_TAGLINE`                  | Subtitle in browser tab / SEO               |
+| `REACT_APP_PUBLIC_URL`               | Public app URL for legal pages              |
+| `REACT_APP_SUPPORT_EMAIL`            | Support contact email                       |
+| `REACT_APP_GITHUB_REPO`              | Optional GitHub repo for support links      |
+| `REACT_APP_DEFAULT_INSTANCE`         | Your Lemmy URL (must match production API)  |
+| `REACT_APP_LOCK_TO_DEFAULT_INSTANCE` | `1` to restrict users to your instance      |
+| `REACT_APP_INSTANCE_SELECTION_MODE`  | e.g. `default_first`                        |
 
 
 **Lemmy** (runtime on DigitalOcean) — configure in `lemmy/docker/lemmy.hjson` (see Lemmy admin docs).

@@ -59,21 +59,23 @@ sed \
 sed -i "s/PICTRS__SERVER__API_KEY=.*/PICTRS__SERVER__API_KEY=${PICTRS_API_KEY}/" docker-compose.yml
 sed -i "s/POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=${POSTGRES_PASSWORD}/" docker-compose.yml
 
-# Production: use release image instead of build
-if grep -q '^    build:' docker-compose.yml; then
-  sed -i '/^  lemmy:/,/^  lemmy-ui:/ {
-    s/^    build:/    # build:/
-  }' docker-compose.yml
-  if ! grep -q 'image: dessalines/lemmy' docker-compose.yml; then
-    sed -i "/^  lemmy:/a\\    image: dessalines/lemmy:${LEMMY_IMAGE_TAG}" docker-compose.yml
-  fi
+# Production: use release image (delete build block; always ensure image — safe on re-run)
+sed -i '/^  lemmy:/,/^  lemmy-ui:/ {
+  /^    build:/d
+  /^    # build:/d
+  /^      context:/d
+  /^      dockerfile:/d
+}' docker-compose.yml
+if ! grep -qE '^[[:space:]]+image: dessalines/lemmy' docker-compose.yml; then
+  sed -i "/^  lemmy:/a\\    image: dessalines/lemmy:${LEMMY_IMAGE_TAG}" docker-compose.yml
 fi
 
 # Bind proxy to localhost only; drop public postgres port
 sed -i 's/- "1236:1236"/- "127.0.0.1:1236:1236"/' docker-compose.yml
 sed -i 's/- "8536:8536"//' docker-compose.yml
-sed -i '/^    ports:$/,/^    [a-z]/ {
+sed -i '/^  postgres:/,/^  [a-z_-]*:/ {
   /- "5433:5432"/d
+  /^    ports:$/d
 }' docker-compose.yml
 
 # Remove dev federation disable

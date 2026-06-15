@@ -2,7 +2,7 @@
 #
 # Option A — Cloudflare Origin Certificate (Full strict):
 #   Dashboard → SSL/TLS → Origin Server → create cert for api.vibecodecollab.com
-#   Save as /etc/caddy/certs/origin.pem and origin-key.pem, then use block below.
+#   Save as /etc/caddy/certs/origin.pem and origin-key.pem (dir: root:caddy 750, files: 640).
 
 api.vibecodecollab.com {
 	tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin-key.pem

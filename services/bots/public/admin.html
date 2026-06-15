@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bot Post Queue Admin</title>
+    <style>
+      :root {
+        font-family: system-ui, sans-serif;
+        color: #111;
+        background: #f6f6f6;
+      }
+      body {
+        margin: 0;
+        padding: 1.5rem;
+      }
+      h1 {
+        margin-top: 0;
+      }
+      .toolbar {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 0.5rem 0.65rem;
+        vertical-align: top;
+        text-align: left;
+        font-size: 0.9rem;
+      }
+      th {
+        background: #eee;
+      }
+      .error {
+        color: #a00;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+      }
+      .status-failed {
+        color: #a00;
+        font-weight: 600;
+      }
+      button {
+        cursor: pointer;
+        margin-right: 0.35rem;
+      }
+      #message {
+        margin: 0.75rem 0;
+        min-height: 1.25rem;
+      }
+      .muted {
+        color: #666;
+        font-size: 0.85rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Bot Post Queue</h1>
+    <p class="muted">
+      Pending and failed items for @ai_tool_news_bot and @github_projects_bot.
+    </p>
+    <div class="toolbar">
+      <button type="button" id="refresh">Refresh</button>
+      <button type="button" id="fetch-ingest">Fetch new content</button>
+      <button type="button" id="set-token">Set API token</button>
+      <span id="token-status" class="muted"></span>
+    </div>
+    <div id="message"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Summary</th>
+          <th>Bot</th>
+          <th>Community</th>
+          <th>Source</th>
+          <th>URL</th>
+          <th>Created</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="queue-body">
+        <tr>
+          <td colspan="9">Loading…</td>
+        </tr>
+      </tbody>
+    </table>
+    <script>
+      const TOKEN_KEY = "bot_admin_api_token";
+
+      function getToken() {
+        return sessionStorage.getItem(TOKEN_KEY) || "";
+      }
+
+      function setMessage(text, isError) {
+        const el = document.getElementById("message");
+        el.textContent = text;
+        el.style.color = isError ? "#a00" : "#111";
+      }
+
+      function updateTokenStatus() {
+        const el = document.getElementById("token-status");
+        el.textContent = getToken()
+          ? "Token saved in this tab"
+          : "No token — click Set API token";
+      }
+
+      async function api(path, options) {
+        const token = getToken();
+        if (!token) {
+          throw new Error("Set ADMIN_API_TOKEN first");
+        }
+        const res = await fetch(path, {
+          ...options,
+          headers: {
+            Authorization: "Bearer " + token,
+            ...(options && options.headers),
+          },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || res.statusText || "Request failed");
+        }
+        return data;
+      }
+
+      function formatDate(iso) {
+        try {
+          return new Date(iso).toLocaleString();
+        } catch {
+          return iso;
+        }
+      }
+
+      function truncateText(str, max) {
+        const text = String(str || "").trim();
+        if (!text) {
+          return "—";
+        }
+        if (text.length <= max) {
+          return escapeHtml(text);
+        }
+        return escapeHtml(text.slice(0, max - 1)) + "…";
+      }
+
+      function renderRow(item) {
+        const urlCell = item.url
+          ? `<a href="${item.url}" target="_blank" rel="noopener">${item.url}</a>`
+          : "—";
+        const summaryCell = truncateText(item.body, 200);
+        const statusClass =
+          item.status === "failed" ? ' class="status-failed"' : "";
+        const error =
+          item.errorMessage
+            ? `<div class="error">Error: ${escapeHtml(item.errorMessage)}</div>`
+            : "";
+        return `<tr data-id="${item.id}">
+          <td>${escapeHtml(item.title)}${error}</td>
+          <td class="muted">${summaryCell}</td>
+          <td>${escapeHtml(item.botAccount)}</td>
+          <td>${escapeHtml(item.targetCommunity)}</td>
+          <td>${escapeHtml(item.sourceType)}</td>
+          <td>${urlCell}</td>
+          <td>${formatDate(item.createdAt)}</td>
+          <td${statusClass}>${escapeHtml(item.status)}</td>
+          <td>
+            <button type="button" data-action="post" data-id="${item.id}">Post</button>
+            <button type="button" data-action="ignore" data-id="${item.id}">Ignore</button>
+          </td>
+        </tr>`;
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function showEmptyQueue(tbody) {
+        tbody.innerHTML =
+          '<tr><td colspan="9">No pending or failed items.</td></tr>';
+      }
+
+      function removeQueueRow(id) {
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        if (!row) return;
+        const tbody = document.getElementById("queue-body");
+        row.remove();
+        if (tbody.querySelectorAll("tr[data-id]").length === 0) {
+          showEmptyQueue(tbody);
+        }
+      }
+
+      function setRowButtonsDisabled(id, disabled) {
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        if (!row) return;
+        for (const button of row.querySelectorAll("button")) {
+          button.disabled = disabled;
+        }
+      }
+
+      async function loadQueue(options) {
+        const preserveMessage = options && options.preserveMessage;
+        const tbody = document.getElementById("queue-body");
+        try {
+          const data = await api("/admin/bot-posts/pending");
+          const items = data.items || [];
+          if (items.length === 0) {
+            showEmptyQueue(tbody);
+          } else {
+            tbody.innerHTML = items.map(renderRow).join("");
+          }
+          if (!preserveMessage) {
+            setMessage("");
+          }
+        } catch (err) {
+          tbody.innerHTML =
+            '<tr><td colspan="9">Failed to load queue.</td></tr>';
+          setMessage(err.message, true);
+        }
+      }
+
+      async function postItem(id) {
+        setMessage("Posting…");
+        setRowButtonsDisabled(id, true);
+        try {
+          const data = await api(`/admin/bot-posts/${id}/post`, {
+            method: "POST",
+          });
+          setMessage(`Posted: ${data.lemmy?.postUrl || "success"}`);
+          removeQueueRow(id);
+          await loadQueue({ preserveMessage: true });
+        } catch (err) {
+          setMessage(err.message, true);
+          await loadQueue();
+        }
+      }
+
+      async function ignoreItem(id) {
+        try {
+          await api(`/admin/bot-posts/${id}/ignore`, { method: "POST" });
+          setMessage("Ignored.");
+          await loadQueue();
+        } catch (err) {
+          setMessage(err.message, true);
+        }
+      }
+
+      function formatIngestResult(result) {
+        const parts = [];
+        const gh = result.github || {};
+        const rss = result.rss || {};
+        parts.push(
+          `GitHub: ${gh.inserted ?? 0} added, ${gh.skipped ?? 0} skipped`,
+        );
+        if (gh.details?.search) {
+          const s = gh.details.search;
+          parts.push(
+            `Search: ${s.inserted ?? 0} added, ${s.skipped ?? 0} skipped`,
+          );
+        }
+        if (gh.details?.awesomeLists) {
+          const a = gh.details.awesomeLists;
+          parts.push(
+            `Awesome lists: ${a.inserted ?? 0} added, ${a.skipped ?? 0} skipped`,
+          );
+        }
+        parts.push(
+          `News: ${rss.inserted ?? 0} added, ${rss.skipped ?? 0} skipped`,
+        );
+        const errors = [...(gh.errors || []), ...(rss.errors || [])];
+        if (errors.length > 0) {
+          parts.push(`Errors: ${errors.join("; ")}`);
+        }
+        return parts.join(" · ");
+      }
+
+      async function fetchIngest() {
+        const button = document.getElementById("fetch-ingest");
+        button.disabled = true;
+        setMessage("Fetching new content…");
+        try {
+          const result = await api("/admin/bot-posts/ingest", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sources: ["all"] }),
+          });
+          setMessage(formatIngestResult(result));
+          await loadQueue();
+        } catch (err) {
+          setMessage(err.message, true);
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      document.getElementById("refresh").addEventListener("click", loadQueue);
+      document
+        .getElementById("fetch-ingest")
+        .addEventListener("click", fetchIngest);
+      document.getElementById("set-token").addEventListener("click", () => {
+        const value = prompt("Enter ADMIN_API_TOKEN:");
+        if (value) {
+          sessionStorage.setItem(TOKEN_KEY, value.trim());
+          updateTokenStatus();
+          loadQueue();
+        }
+      });
+
+      document
+        .getElementById("queue-body")
+        .addEventListener("click", (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLElement)) return;
+          const action = target.getAttribute("data-action");
+          const id = target.getAttribute("data-id");
+          if (!action || !id) return;
+          if (action === "post") postItem(id);
+          if (action === "ignore") ignoreItem(id);
+        });
+
+      updateTokenStatus();
+      if (getToken()) {
+        loadQueue();
+      } else {
+        document.getElementById("queue-body").innerHTML =
+          '<tr><td colspan="9">Set API token to load queue.</td></tr>';
+      }
+    </script>
+  </body>
+</html>
