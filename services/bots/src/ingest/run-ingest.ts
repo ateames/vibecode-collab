@@ -4,10 +4,20 @@ import {
   getSummarizerConfig,
   type IngestSource,
 } from "../config.js";
+import type { Db } from "../db/client.js";
 import type { QueueService } from "../services/queue-service.js";
-import { collectGitHubCandidates } from "./github-search.js";
+import { IngestStateService } from "../services/ingest-state-service.js";
+import {
+  collectAwesomeListCandidates,
+  isGitHubIngestConfigured,
+} from "./github-awesome-lists.js";
+import { collectGitHubCandidates, resolveGitHubSearchQueries } from "./github-search.js";
 import { fetchRssCandidates } from "./rss.js";
-import type { IngestCandidate, IngestRunResult, IngestSourceResult } from "./types.js";
+import type {
+  IngestCandidate,
+  IngestRunResult,
+  IngestSourceResult,
+} from "./types.js";
 import { enrichCandidateWithSummary } from "../summarize/enrich-candidate.js";
 
 async function enqueueCandidates(
@@ -31,12 +41,25 @@ async function enqueueCandidates(
   return { inserted, skipped, errors: [] };
 }
 
+function mergeResults(
+  target: IngestSourceResult,
+  source: IngestSourceResult,
+): IngestSourceResult {
+  return {
+    inserted: target.inserted + source.inserted,
+    skipped: target.skipped + source.skipped,
+    errors: [...target.errors, ...source.errors],
+  };
+}
+
 export async function runIngest(
   queue: QueueService,
   sources: IngestSource[],
+  db: Db,
 ): Promise<IngestRunResult> {
   const env = getEnv();
   const communities = getIngestCommunityConfig();
+  const ingestState = new IngestStateService(db);
 
   const result: IngestRunResult = {
     github: { inserted: 0, skipped: 0, errors: [] },
@@ -44,19 +67,58 @@ export async function runIngest(
   };
 
   if (sources.includes("github")) {
-    if (!env.GITHUB_SEARCH_QUERY.trim()) {
-      result.github.errors.push("GITHUB_SEARCH_QUERY is not configured");
+    if (!isGitHubIngestConfigured(env)) {
+      result.github.errors.push(
+        "GitHub ingest is not configured (set GITHUB_SEARCH_QUERIES and/or GITHUB_AWESOME_LIST_REPOS)",
+      );
     } else {
-      try {
-        const { candidates } = await collectGitHubCandidates(
-          env,
-          communities.githubProjectsCommunityName,
-          communities.githubProjectsCommunityId,
-        );
-        result.github = await enqueueCandidates(queue, candidates);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        result.github.errors.push(message);
+      const searchQueries = resolveGitHubSearchQueries(env);
+      if (searchQueries.length > 0) {
+        try {
+          const { candidates } = await collectGitHubCandidates(
+            env,
+            communities.githubProjectsCommunityName,
+            communities.githubProjectsCommunityId,
+          );
+          const searchResult = await enqueueCandidates(queue, candidates);
+          result.github = mergeResults(result.github, searchResult);
+          result.github.details = {
+            ...result.github.details,
+            search: searchResult,
+          };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          result.github.errors.push(message);
+          result.github.details = {
+            ...result.github.details,
+            search: { inserted: 0, skipped: 0, errors: [message] },
+          };
+        }
+      }
+
+      if (env.GITHUB_AWESOME_LIST_REPOS.length > 0) {
+        try {
+          const { candidates, errors } = await collectAwesomeListCandidates(
+            env,
+            communities.githubProjectsCommunityName,
+            communities.githubProjectsCommunityId,
+            ingestState,
+          );
+          const awesomeEnqueue = await enqueueCandidates(queue, candidates);
+          const awesomeResult = { ...awesomeEnqueue, errors };
+          result.github = mergeResults(result.github, awesomeResult);
+          result.github.details = {
+            ...result.github.details,
+            awesomeLists: awesomeResult,
+          };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          result.github.errors.push(message);
+          result.github.details = {
+            ...result.github.details,
+            awesomeLists: { inserted: 0, skipped: 0, errors: [message] },
+          };
+        }
       }
     }
   }

@@ -27,6 +27,37 @@ const commaSeparatedUrls = z.preprocess((value) => {
     .filter(Boolean);
 }, z.array(z.string().url()));
 
+const commaSeparatedStrings = z.preprocess((value) => {
+  if (value === "" || value === undefined || value === null) {
+    return [];
+  }
+  if (typeof value !== "string") {
+    return value;
+  }
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+}, z.array(z.string().min(1)));
+
+const githubRepoList = z.preprocess((value) => {
+  if (value === "" || value === undefined || value === null) {
+    return [];
+  }
+  if (typeof value !== "string") {
+    return value;
+  }
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const normalized = part.replace(/^https:\/\/github\.com\//, "");
+      return normalized.replace(/\/$/, "");
+    })
+    .filter((part) => /^[^/]+\/[^/]+$/.test(part));
+}, z.array(z.string().regex(/^[^/]+\/[^/]+$/)));
+
 const envSchema = z.object({
   PORT: z.coerce.number().default(3030),
   HOST: z.string().default("127.0.0.1"),
@@ -43,11 +74,23 @@ const envSchema = z.object({
   GITHUB_PROJECTS_BOT_COMMUNITY_NAME: z.string().default("github_projects"),
   GITHUB_TOKEN: z.string().optional(),
   GITHUB_SEARCH_QUERY: z.string().default(""),
+  GITHUB_SEARCH_QUERIES: commaSeparatedStrings,
   GITHUB_SEARCH_SORT: z
     .enum(["stars", "forks", "help-wanted-issues", "updated"])
-    .default("stars"),
-  GITHUB_SEARCH_PER_PAGE: z.coerce.number().int().min(1).max(100).default(10),
+    .default("updated"),
+  GITHUB_SEARCH_PER_PAGE: z.coerce.number().int().min(1).max(100).default(15),
   GITHUB_MAX_AGE_DAYS: z.coerce.number().int().positive().default(90),
+  GITHUB_AWESOME_LIST_REPOS: githubRepoList,
+  GITHUB_AWESOME_MAX_NEW_PER_LIST: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .default(10),
+  GITHUB_AWESOME_RESOLVE_MONOREPO_PATHS: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
   AI_NEWS_RSS_URLS: commaSeparatedUrls,
   AI_NEWS_MAX_ITEMS_PER_FEED: z.coerce.number().int().min(1).max(50).default(5),
   AI_NEWS_MAX_AGE_DAYS: z.coerce.number().int().positive().default(14),

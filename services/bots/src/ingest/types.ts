@@ -18,7 +18,12 @@ export type IngestSourceResult = {
   errors: string[];
 };
 
+export type GitHubIngestDetails = {
+  search?: IngestSourceResult;
+  awesomeLists?: IngestSourceResult;
+};
+
 export type IngestRunResult = {
-  github: IngestSourceResult;
+  github: IngestSourceResult & { details?: GitHubIngestDetails };
   rss: IngestSourceResult;
 };

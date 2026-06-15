@@ -90,10 +90,12 @@ describe("github-search", () => {
       {
         GITHUB_TOKEN: "test-token",
         GITHUB_SEARCH_QUERY: "topic:ai",
+        GITHUB_SEARCH_QUERIES: [],
         GITHUB_SEARCH_SORT: "stars",
         GITHUB_SEARCH_PER_PAGE: 10,
         GITHUB_MAX_AGE_DAYS: 90,
       },
+      "topic:ai",
       fetchMock,
     );
 
@@ -105,5 +107,48 @@ describe("github-search", () => {
     expect((init.headers as Record<string, string>).Authorization).toBe(
       "Bearer test-token",
     );
+  });
+
+  it("fetchAllGitHubSearchRepos dedupes across queries", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ items: [baseRepo] }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ items: [baseRepo] }), { status: 200 }),
+      );
+
+    const { fetchAllGitHubSearchRepos } = await import("./github-search.js");
+    const repos = await fetchAllGitHubSearchRepos(
+      {
+        GITHUB_TOKEN: "test-token",
+        GITHUB_SEARCH_QUERY: "",
+        GITHUB_SEARCH_QUERIES: ["topic:coding-agents", "topic:ai-coding"],
+        GITHUB_SEARCH_SORT: "updated",
+        GITHUB_SEARCH_PER_PAGE: 10,
+        GITHUB_MAX_AGE_DAYS: 90,
+      },
+      fetchMock,
+    );
+
+    expect(repos).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("resolveGitHubSearchQueries prefers GITHUB_SEARCH_QUERIES", async () => {
+    const { resolveGitHubSearchQueries } = await import("./github-search.js");
+    expect(
+      resolveGitHubSearchQueries({
+        GITHUB_SEARCH_QUERIES: ["topic:coding-agents"],
+        GITHUB_SEARCH_QUERY: "topic:ai",
+      }),
+    ).toEqual(["topic:coding-agents"]);
+    expect(
+      resolveGitHubSearchQueries({
+        GITHUB_SEARCH_QUERIES: [],
+        GITHUB_SEARCH_QUERY: "topic:ai",
+      }),
+    ).toEqual(["topic:ai"]);
   });
 });

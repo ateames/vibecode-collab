@@ -152,8 +152,10 @@ export class QueueService {
       .select({ id: queuedBotPosts.id })
       .from(queuedBotPosts)
       .where(eq(queuedBotPosts.status, "posting"));
+    const message =
+      "Posting was interrupted — check Lemmy before retrying";
     for (const row of rows) {
-      await this.resetPostingToPending(row.id);
+      await this.markFailed(row.id, message);
     }
     return rows.length;
   }

@@ -60,3 +60,12 @@ export const queuedBotPosts = sqliteTable(
 
 export type QueuedBotPost = typeof queuedBotPosts.$inferSelect;
 export type NewQueuedBotPost = typeof queuedBotPosts.$inferInsert;
+
+export const ingestSourceState = sqliteTable("ingest_source_state", {
+  sourceKey: text("source_key").primaryKey(),
+  readmeSha: text("readme_sha"),
+  knownLinksJson: text("known_links_json").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export type IngestSourceState = typeof ingestSourceState.$inferSelect;

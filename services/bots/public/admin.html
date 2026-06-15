@@ -163,7 +163,7 @@
           item.status === "failed" ? ' class="status-failed"' : "";
         const error =
           item.errorMessage
-            ? `<div class="error">${item.errorMessage}</div>`
+            ? `<div class="error">Error: ${escapeHtml(item.errorMessage)}</div>`
             : "";
         return `<tr data-id="${item.id}">
           <td>${escapeHtml(item.title)}${error}</td>
@@ -189,18 +189,43 @@
           .replace(/"/g, "&quot;");
       }
 
-      async function loadQueue() {
+      function showEmptyQueue(tbody) {
+        tbody.innerHTML =
+          '<tr><td colspan="9">No pending or failed items.</td></tr>';
+      }
+
+      function removeQueueRow(id) {
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        if (!row) return;
+        const tbody = document.getElementById("queue-body");
+        row.remove();
+        if (tbody.querySelectorAll("tr[data-id]").length === 0) {
+          showEmptyQueue(tbody);
+        }
+      }
+
+      function setRowButtonsDisabled(id, disabled) {
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        if (!row) return;
+        for (const button of row.querySelectorAll("button")) {
+          button.disabled = disabled;
+        }
+      }
+
+      async function loadQueue(options) {
+        const preserveMessage = options && options.preserveMessage;
         const tbody = document.getElementById("queue-body");
         try {
           const data = await api("/admin/bot-posts/pending");
           const items = data.items || [];
           if (items.length === 0) {
-            tbody.innerHTML =
-              '<tr><td colspan="9">No pending or failed items.</td></tr>';
+            showEmptyQueue(tbody);
           } else {
             tbody.innerHTML = items.map(renderRow).join("");
           }
-          setMessage("");
+          if (!preserveMessage) {
+            setMessage("");
+          }
         } catch (err) {
           tbody.innerHTML =
             '<tr><td colspan="9">Failed to load queue.</td></tr>';
@@ -209,14 +234,15 @@
       }
 
       async function postItem(id) {
-        if (!confirm("Post this item to Lemmy?")) return;
         setMessage("Posting…");
+        setRowButtonsDisabled(id, true);
         try {
           const data = await api(`/admin/bot-posts/${id}/post`, {
             method: "POST",
           });
           setMessage(`Posted: ${data.lemmy?.postUrl || "success"}`);
-          await loadQueue();
+          removeQueueRow(id);
+          await loadQueue({ preserveMessage: true });
         } catch (err) {
           setMessage(err.message, true);
           await loadQueue();
@@ -224,8 +250,6 @@
       }
 
       async function ignoreItem(id) {
-        if (!confirm("Ignore this item? It will leave the pending list."))
-          return;
         try {
           await api(`/admin/bot-posts/${id}/ignore`, { method: "POST" });
           setMessage("Ignored.");
@@ -242,6 +266,18 @@
         parts.push(
           `GitHub: ${gh.inserted ?? 0} added, ${gh.skipped ?? 0} skipped`,
         );
+        if (gh.details?.search) {
+          const s = gh.details.search;
+          parts.push(
+            `Search: ${s.inserted ?? 0} added, ${s.skipped ?? 0} skipped`,
+          );
+        }
+        if (gh.details?.awesomeLists) {
+          const a = gh.details.awesomeLists;
+          parts.push(
+            `Awesome lists: ${a.inserted ?? 0} added, ${a.skipped ?? 0} skipped`,
+          );
+        }
         parts.push(
           `News: ${rss.inserted ?? 0} added, ${rss.skipped ?? 0} skipped`,
         );

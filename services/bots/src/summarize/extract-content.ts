@@ -1,3 +1,4 @@
+import { fetchReadmeRaw } from "../ingest/github-api.js";
 import type { SummarizerConfig } from "../config.js";
 import type { IngestCandidate } from "../ingest/types.js";
 
@@ -128,32 +129,8 @@ export async function fetchGitHubReadme(
   config: SummarizerConfig,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string | null> {
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github.raw",
-    "X-GitHub-Api-Version": "2022-11-28",
-    "User-Agent": "vibecode-collab-bots",
-  };
-  if (config.GITHUB_TOKEN) {
-    headers.Authorization = `Bearer ${config.GITHUB_TOKEN}`;
-  }
-
-  try {
-    const response = await fetchWithLimits(
-      `https://api.github.com/repos/${fullName}/readme`,
-      config,
-      fetchImpl,
-      { headers },
-    );
-    if (!response.ok) {
-      return null;
-    }
-    const text = (await readResponseText(response, config.PAGE_FETCH_MAX_BYTES))
-      .replace(/\s+/g, " ")
-      .trim();
-    return text.length > 0 ? truncate(text, SOURCE_TEXT_MAX) : null;
-  } catch {
-    return null;
-  }
+  const result = await fetchReadmeRaw(fullName, config, fetchImpl);
+  return result?.content ?? null;
 }
 
 function extractRssBodyText(body: string): string {

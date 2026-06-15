@@ -18,7 +18,9 @@ async function main() {
   const queue = new QueueService(db);
   const resetCount = await queue.resetStalePosting();
   if (resetCount > 0) {
-    console.log(`Reset ${resetCount} stale posting item(s) to pending`);
+    console.log(
+      `Marked ${resetCount} interrupted posting item(s) as failed`,
+    );
   }
   const lemmy = new LemmyPostingService();
 
@@ -33,7 +35,7 @@ async function main() {
 
   app.route(
     "/admin/bot-posts",
-    createAdminBotPostsRoutes(queue, lemmy),
+    createAdminBotPostsRoutes(queue, lemmy, db),
   );
 
   serve(

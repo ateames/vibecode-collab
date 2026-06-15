@@ -85,7 +85,7 @@ describe("rss ingest", () => {
           {
             title: "Item 1",
             link: "https://example.com/1",
-            isoDate: "2026-05-27T00:00:00Z",
+            isoDate: new Date().toISOString(),
           },
         ],
       }),

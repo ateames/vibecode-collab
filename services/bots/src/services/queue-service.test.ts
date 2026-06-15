@@ -100,4 +100,45 @@ describe("QueueService", () => {
     const second = await queue.claimForPosting(item.id);
     expect(second).toBeNull();
   });
+
+  it("markPosted excludes item from listPending", async () => {
+    const item = await queue.insert({
+      title: "Post me",
+      botAccount: "ai_tool_news_bot",
+      targetCommunity: "AI Coding Tool Updates",
+      targetCommunityId: 1,
+      sourceType: "manual",
+    });
+    await queue.claimForPosting(item.id);
+    const posted = await queue.markPosted(item.id, {
+      lemmyPostId: 42,
+      lemmyPostUrl: "https://example.com/post/42",
+      lemmyResponseJson: "{}",
+    });
+    expect(posted?.status).toBe("posted");
+    expect(posted?.postedAt).toBeTruthy();
+
+    const pending = await queue.listPending();
+    expect(pending.find((p) => p.id === item.id)).toBeUndefined();
+  });
+
+  it("resetStalePosting marks interrupted posting items as failed", async () => {
+    const item = await queue.insert({
+      title: "Interrupted",
+      botAccount: "ai_tool_news_bot",
+      targetCommunity: "AI Coding Tool Updates",
+      targetCommunityId: 1,
+      sourceType: "manual",
+    });
+    await queue.claimForPosting(item.id);
+    const count = await queue.resetStalePosting();
+    expect(count).toBe(1);
+
+    const updated = await queue.getById(item.id);
+    expect(updated?.status).toBe("failed");
+    expect(updated?.errorMessage).toContain("interrupted");
+
+    const pending = await queue.listPending();
+    expect(pending.some((p) => p.id === item.id)).toBe(true);
+  });
 });

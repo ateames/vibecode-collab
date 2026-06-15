@@ -71,10 +71,24 @@ ssh -L 3030:127.0.0.1:3030 user@your-droplet
 
 Configure in `.env` (see `.env.example`):
 
-- **GitHub projects** — `GITHUB_TOKEN` (recommended), `GITHUB_SEARCH_QUERY`, `GITHUB_SEARCH_PER_PAGE`, `GITHUB_MAX_AGE_DAYS`
+- **GitHub projects (search)** — `GITHUB_TOKEN` (recommended), `GITHUB_SEARCH_QUERIES` (comma-separated) or legacy `GITHUB_SEARCH_QUERY`, `GITHUB_SEARCH_SORT`, `GITHUB_SEARCH_PER_PAGE`, `GITHUB_MAX_AGE_DAYS`
+- **GitHub projects (awesome lists)** — `GITHUB_AWESOME_LIST_REPOS` (comma-separated `owner/repo`), `GITHUB_AWESOME_MAX_NEW_PER_LIST`, `GITHUB_AWESOME_RESOLVE_MONOREPO_PATHS` (resolve relative README paths to `/tree/...` URLs)
 - **AI tool news** — `AI_NEWS_RSS_URLS` (comma-separated feed URLs), `AI_NEWS_MAX_ITEMS_PER_FEED`, `AI_NEWS_MAX_AGE_DAYS`
 
-Example GitHub query: `topic:ai-coding+stars:>50+pushed:>2025-01-01`
+Example search queries:
+
+```env
+GITHUB_SEARCH_QUERIES=topic:coding-agents+stars:>50+pushed:>2025-03-01,topic:ai-coding+stars:>100+pushed:>2025-03-01
+GITHUB_SEARCH_SORT=updated
+```
+
+Example awesome-list sources (coding agents / AI agent curations):
+
+```env
+GITHUB_AWESOME_LIST_REPOS=Arindam200/awesome-ai-apps,Shubhamsaboo/awesome-llm-apps,Jenqyang/Awesome-AI-Agents,caramaschiHG/awesome-ai-agents-2026,kyrolabs/awesome-agents
+```
+
+On the **first ingest**, each list may add up to `GITHUB_AWESOME_MAX_NEW_PER_LIST` items (filtered by repo recency). Later ingests only queue **newly added README links** not seen in the prior snapshot. `GITHUB_TOKEN` is required for awesome-list ingestion.
 
 Ingest via admin **Fetch new content** or API:
 

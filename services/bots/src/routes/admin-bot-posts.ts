@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { BotAccount } from "../db/schema.js";
+import type { Db } from "../db/client.js";
 import { parseIngestSources } from "../config.js";
 import { runIngest } from "../ingest/run-ingest.js";
 import { formatError } from "../lib/errors.js";
@@ -13,6 +14,7 @@ import { QueueService } from "../services/queue-service.js";
 export function createAdminBotPostsRoutes(
   queue: QueueService,
   lemmy: LemmyPostingService,
+  db: Db,
 ) {
   const app = new Hono();
 
@@ -29,7 +31,7 @@ export function createAdminBotPostsRoutes(
       const sources = parseIngestSources(
         (body as { sources?: unknown }).sources ?? undefined,
       );
-      const result = await runIngest(queue, sources);
+      const result = await runIngest(queue, sources, db);
       return c.json(result);
     } catch (error) {
       return c.json({ error: formatError(error) }, 400);
